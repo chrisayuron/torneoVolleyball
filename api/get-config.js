@@ -1,5 +1,5 @@
 // api/get-config.js
-// Esta función se ejecutará en los servidores de Vercel.
+// ESTA ES LA VERSIÓN PARA EL PROYECTO DE VOLEIBOL
 
 export default function handler(request, response) {
   try {
@@ -16,7 +16,9 @@ export default function handler(request, response) {
       projectId: "torneo-interclases",
       storageBucket: "torneo-interclases.appspot.com",
       messagingSenderId: "676891636137",
-      appId: "1:676891636137:web:06562e91b7680ad7ad54b8"
+      // ¡ESTE ES EL CAMBIO IMPORTANTE!
+      // Apunta al identificador único para los datos de voleibol.
+      appId: "1:676891636137:web:06562e91b7680ad7ad54b8-volleyball"
     };
 
     // 3. Envía el objeto de configuración de vuelta al navegador.
@@ -27,3 +29,4 @@ export default function handler(request, response) {
     response.status(500).json({ error: 'Fallo al cargar la configuración.' });
   }
 }
+
