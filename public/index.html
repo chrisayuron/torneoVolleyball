@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organizador de Torneo de Fútbol Interclases</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f0;
+            background-image: linear-gradient(45deg, rgba(0,0,0,0.02) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.02) 75%),
+                              linear-gradient(-45deg, rgba(0,0,0,0.02) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.02) 75%);
+            background-size: 30px 30px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e5e7eb;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            color: white;
+            transition: background-color 0.3s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+        }
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+        .btn-primary {
+            background-color: #16a34a; /* green-600 */
+        }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #15803d; /* green-700 */
+        }
+        .btn-secondary {
+            background-color: #334155; /* slate-700 */
+        }
+        .btn-secondary:hover {
+            background-color: #1e293b; /* slate-800 */
+        }
+        .btn-danger {
+            background-color: #dc2626;
+        }
+        .btn-danger:hover {
+            background-color: #b91c1c;
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #16a34a;
+            box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.3);
+        }
+        .input-field:read-only, .input-field:disabled {
+            background-color: #f3f4f6;
+            cursor: not-allowed;
+        }
+        .table-header {
+            background-color: #f3f4f6;
+            font-weight: 600;
+        }
+        .winner-banner {
+            background: linear-gradient(45deg, #facc15, #fbbf24, #f59e0b);
+            color: #422006;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            border: 4px solid #fde047;
+        }
+        #modal, #loading-screen {
+            transition: opacity 0.3s ease;
+        }
+        .spinner {
+            border: 4px solid #f3f4f6; /* light grey */
+            border-top: 4px solid #16a34a; /* green */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 p-4 sm:p-6 md:p-8">
+
+    <div id="loading-screen" class="fixed inset-0 bg-gray-100 flex flex-col items-center justify-center z-50 p-4">
+        <div class="spinner"></div>
+        <p class="text-gray-600 mt-4">Cargando configuración...</p>
+    </div>
+
+    <div id="login-screen" class="fixed inset-0 bg-gray-100 flex items-center justify-center z-50 p-4 hidden">
+        <div class="w-full max-w-sm">
+            <div class="card text-center">
+                <h2 id="login-title" class="text-2xl font-bold mb-4">Acceso Protegido</h2>
+                <p id="login-subtitle" class="text-gray-600 mb-6">Por favor, introduce la clave maestra para continuar.</p>
+                <input type="password" id="password-input" class="input-field mb-4" placeholder="••••••••">
+                <p id="login-error" class="text-red-500 text-sm mb-4 h-5"></p>
+                <button id="login-btn" class="btn btn-primary w-full">Continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app" class="max-w-7xl mx-auto hidden">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-green-800 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+                Organizador de Torneo Interclases
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 ml-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+            </h1>
+            <p class="text-lg text-gray-600 mt-2">Gestiona los equipos, partidos y clasificaciones de forma fácil y rápida.</p>
+        </header>
+
+        <!-- Banner del Ganador -->
+        <div id="winner-section" class="hidden card winner-banner">
+            <h2 class="text-3xl font-bold mb-2">¡TENEMOS UN CAMPEÓN!</h2>
+            <p id="winner-name" class="text-5xl font-extrabold"></p>
+            <button onclick="app.resetTournament()" class="btn btn-primary mt-6">Iniciar Nuevo Torneo</button>
+        </div>
+
+        <div id="main-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Columna de Configuración -->
+                <div class="lg:col-span-1">
+                    <div id="config-panel">
+                         <!-- Sección de Equipos -->
+                        <div class="card">
+                            <h2 class="text-2xl font-bold mb-4 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.653-.124-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.653.124-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                1. Registrar Equipos
+                            </h2>
+                            <div id="add-team-wrapper" class="flex gap-2">
+                                <input type="text" id="team-name" class="input-field" placeholder="Nombre del curso (Ej: 11-A)">
+                                <button id="add-team-btn" onclick="app.addTeam()" class="btn btn-primary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                                    Añadir
+                                </button>
+                            </div>
+                            <div id="teams-list" class="mt-4 space-y-2"></div>
+                            <button id="clear-teams-btn" onclick="app.clearTeams()" class="btn btn-danger w-full mt-4 hidden">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                Limpiar Equipos
+                            </button>
+                        </div>
+
+                        <!-- Sección de Generación de Partidos -->
+                        <div class="card">
+                            <h2 class="text-2xl font-bold mb-4 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                2. Generar Partidos
+                            </h2>
+                            <p class="text-gray-600 mb-4">Una vez añadidos todos los equipos, genera el calendario de partidos (formato todos contra todos).</p>
+                            <button id="generate-schedule-btn" onclick="app.generateSchedule()" class="btn btn-secondary w-full" disabled>Generar Calendario</button>
+                            <button id="reset-tournament-btn" onclick="app.resetTournament()" class="btn btn-danger w-full mt-4 hidden">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 4a15.915 15.915 0 0112 0M20 20a15.915 15.915 0 01-12 0" /></svg>
+                                Reiniciar Torneo Completo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna de Partidos y Clasificación -->
+                <div class="lg:col-span-2">
+                    <div id="no-data-notification" class="card text-center bg-blue-50 border-blue-200 hidden">
+                        <h3 class="text-xl font-semibold text-blue-800">¡Bienvenido!</h3>
+                        <p class="text-blue-600 mt-2">Parece que no hay un torneo en curso. Para empezar, añade tu primer equipo en el panel de la izquierda.</p>
+                    </div>
+
+                    <!-- Sección de Partidos -->
+                    <div id="schedule-section" class="card hidden">
+                        <h2 class="text-2xl font-bold mb-4 flex items-center">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                            Calendario de Partidos
+                        </h2>
+                        <div id="schedule-list" class="space-y-6"></div>
+                    </div>
+
+                    <!-- Sección de Tabla de Posiciones -->
+                    <div id="standings-section" class="card hidden">
+                        <h2 class="text-2xl font-bold mb-4 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                            Tabla de Posiciones
+                        </h2>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm text-left">
+                                <thead class="table-header">
+                                    <tr>
+                                        <th class="p-2">Pos</th>
+                                        <th class="p-2">Equipo</th>
+                                        <th class="p-2 text-center">PJ</th><th class="p-2 text-center">G</th><th class="p-2 text-center">E</th><th class="p-2 text-center">P</th><th class="p-2 text-center">GF</th><th class="p-2 text-center">GC</th><th class="p-2 text-center">DG</th><th class="p-2 text-center">Pts</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="standings-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                     <!-- Sección de Goleadores -->
+                    <div id="top-scorers-section" class="card hidden">
+                        <h2 class="text-2xl font-bold mb-4 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>
+                            Goleadores del Torneo
+                        </h2>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm text-left">
+                                <thead class="table-header">
+                                    <tr>
+                                        <th class="p-2">Pos</th>
+                                        <th class="p-2">Jugador</th>
+                                        <th class="p-2">Equipo</th>
+                                        <th class="p-2 text-center">Goles</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="top-scorers-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección Final -->
+                     <div id="final-match-section" class="card hidden">
+                        <h2 class="text-2xl font-bold mb-4 text-center text-yellow-500">🔥 ¡LA GRAN FINAL! 🔥</h2>
+                         <div id="final-match-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para Alertas y Confirmaciones -->
+        <div id="modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
+                <div id="modal-message"></div>
+                <div id="modal-buttons" class="flex justify-center gap-4 mt-6">
+                    <!-- Botones se inyectan dinámicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Datalist para autocompletar nombres de jugadores -->
+        <datalist id="player-names"></datalist>
+
+    </div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const App = function() {
+            // Estado local de la aplicación
+            this.teams = [];
+            this.schedule = [];
+            this.finalMatch = null;
+            this.isAuthenticated = false;
+            this.initialLoadComplete = false;
+            
+            // Firebase
+            this.db = null;
+            this.auth = null;
+            this.userId = null;
+            this.appId = ''; // Se llenará desde el servidor
+
+            // --- MODAL ---
+            this.showAlert = function(message) {
+                const modal = document.getElementById('modal');
+                document.getElementById('modal-message').innerHTML = `<p class="text-lg">${message}</p>`;
+                document.getElementById('modal-buttons').innerHTML = `<button onclick="app.hideModal()" class="btn btn-primary">Entendido</button>`;
+                modal.classList.remove('hidden');
+            }
+
+            this.showConfirm = function(message, onConfirm) {
+                const modal = document.getElementById('modal');
+                document.getElementById('modal-message').innerHTML = `<p class="text-lg">${message}</p>`;
+                document.getElementById('modal-buttons').innerHTML = `
+                    <button onclick="app.hideModal()" class="btn btn-secondary">Cancelar</button>
+                    <button id="confirm-btn" class="btn btn-danger">Confirmar</button>
+                `;
+                modal.classList.remove('hidden');
+                document.getElementById('confirm-btn').onclick = () => {
+                    this.hideModal();
+                    onConfirm();
+                };
+            }
+
+            this.hideModal = function() {
+                document.getElementById('modal').classList.add('hidden');
+            }
+            
+            // --- INICIALIZACIÓN Y GESTIÓN DE FIREBASE ---
+            this.init = async function() {
+                 try {
+                    // 1. Pedir la configuración a nuestra propia función de Vercel
+                    const response = await fetch('/api/get-config');
+                    if (!response.ok) {
+                        throw new Error('No se pudo obtener la configuración del servidor.');
+                    }
+                    const firebaseConfig = await response.json();
+
+                    // 2. Usar la configuración recibida para inicializar Firebase
+                    const firebaseApp = initializeApp(firebaseConfig);
+                    this.db = getFirestore(firebaseApp);
+                    this.auth = getAuth(firebaseApp);
+                    this.appId = firebaseConfig.appId;
+
+                    // El resto del flujo de autenticación es el mismo
+                    onAuthStateChanged(this.auth, async (user) => {
+                        if (user) {
+                            this.userId = user.uid;
+                            if (!this.initialLoadComplete) {
+                                this.initialLoadComplete = true;
+                                document.getElementById('loading-screen').classList.add('hidden');
+                                document.getElementById('login-screen').classList.remove('hidden');
+                                this.checkAuth();
+                            }
+                            this.setupFirestoreListener();
+                        } else {
+                           await signInAnonymously(this.auth);
+                        }
+                    });
+                } catch (error) {
+                    console.error("Error crítico de inicialización:", error);
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    this.showAlert(`Error al cargar la aplicación: ${error.message}`);
+                }
+            }
+            
+            this.setupFirestoreListener = function() {
+                if (this.unsubscribe) this.unsubscribe(); 
+                
+                const mainStateRef = doc(this.db, "tournaments", this.appId, "data", "mainState");
+                this.unsubscribe = onSnapshot(mainStateRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const state = docSnap.data();
+                        this.teams = state.teams || [];
+                        this.schedule = state.schedule || [];
+                        this.finalMatch = state.finalMatch || null;
+                        document.getElementById('no-data-notification').classList.add('hidden');
+                    } else {
+                        this.teams = [];
+                        this.schedule = [];
+                        this.finalMatch = null;
+                        document.getElementById('no-data-notification').classList.remove('hidden');
+                    }
+                    if(this.isAuthenticated) this.renderAll();
+                }, (error) => {
+                    console.error("Error escuchando cambios en Firestore: ", error);
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    this.showAlert("No se pudo conectar a la base de datos.");
+                });
+            }
+            
+            this.saveStateToFirestore = async function() {
+                if (!this.userId) return;
+                try {
+                    const mainStateRef = doc(this.db, "tournaments", this.appId, "data", "mainState");
+                    await setDoc(mainStateRef, {
+                        teams: JSON.parse(JSON.stringify(this.teams)), 
+                        schedule: JSON.parse(JSON.stringify(this.schedule)),
+                        finalMatch: JSON.parse(JSON.stringify(this.finalMatch)),
+                    });
+                } catch (error) {
+                    console.error("Error guardando en Firestore: ", error);
+                    this.showAlert("Hubo un error al guardar los datos.");
+                }
+            }
+
+            this.checkAuth = function() {
+                const loginBtn = document.getElementById('login-btn');
+                const passwordInput = document.getElementById('password-input');
+                passwordInput.focus();
+                loginBtn.onclick = () => this.verifyPassword();
+                passwordInput.onkeyup = (e) => { if (e.key === 'Enter') this.verifyPassword(); };
+            }
+
+            this.verifyPassword = async function() {
+                const passwordInput = document.getElementById('password-input');
+                const loginError = document.getElementById('login-error');
+                const loginBtn = document.getElementById('login-btn');
+                loginBtn.disabled = true;
+
+                try {
+                    const configRef = doc(this.db, "tournaments", this.appId, "config", "master");
+                    const configSnap = await getDoc(configRef);
+
+                    if (configSnap.exists() && configSnap.data().masterPassword) {
+                        const masterPassword = configSnap.data().masterPassword;
+                        if (passwordInput.value === masterPassword) {
+                            this.isAuthenticated = true;
+                            document.getElementById('login-screen').classList.add('hidden');
+                            document.getElementById('app').classList.remove('hidden');
+                            loginError.textContent = '';
+                            passwordInput.value = '';
+                            this.renderAll();
+                        } else {
+                            loginError.textContent = 'Clave incorrecta. Inténtalo de nuevo.';
+                            passwordInput.value = '';
+                        }
+                    } else {
+                        loginError.textContent = 'Error: La clave no está configurada en la BD.';
+                         this.showAlert("Error: La contraseña maestra no está configurada en la base de datos. Sigue las instrucciones para añadirla.");
+                    }
+                } catch (error) {
+                    console.error("Error verifying password:", error);
+                    loginError.textContent = 'Error al verificar. Intenta de nuevo.';
+                } finally {
+                    loginBtn.disabled = false;
+                }
+            }
+
+            this.addTeam = function() {
+                if (this.schedule.length > 0) {
+                    this.showAlert("No se pueden añadir equipos después de generar el calendario.");
+                    return;
+                }
+                const teamNameInput = document.getElementById('team-name');
+                const name = teamNameInput.value.trim();
+                if (name && !this.teams.some(team => team.name === name)) {
+                    this.teams.push({ name, pj: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0, dg: 0, pts: 0 });
+                    teamNameInput.value = '';
+                    this.saveStateToFirestore();
+                } else if (!name) {
+                    this.showAlert("Por favor, introduce un nombre para el equipo.");
+                } else {
+                    this.showAlert("Este equipo ya ha sido añadido.");
+                }
+            }
+            
+            this.removeTeam = function(index) {
+                if (this.schedule.length > 0) {
+                    this.showAlert("No puedes eliminar equipos después de generar el calendario. Reinicia el torneo.");
+                    return;
+                }
+                this.teams.splice(index, 1);
+                this.saveStateToFirestore();
+            }
+            
+            this.clearTeams = function() {
+                 this.showConfirm("¿Estás seguro de que deseas eliminar todos los equipos? Esta acción es irreversible.", () => {
+                    this.teams = [];
+                    this.saveStateToFirestore();
+                 });
+            }
+            
+            this.generateSchedule = function() {
+                if (this.teams.length < 2) {
+                    this.showAlert("Necesitas al menos 2 equipos para generar un calendario.");
+                    return;
+                }
+                this.schedule = [];
+                for (let i = 0; i < this.teams.length; i++) {
+                    for (let j = i + 1; j < this.teams.length; j++) {
+                        this.schedule.push({ 
+                            team1: this.teams[i].name, 
+                            team2: this.teams[j].name, 
+                            score1: null, 
+                            score2: null, 
+                            played: false, 
+                            bestPlayer: '', 
+                            scorers: [],
+                            scorersConfirmed: false
+                        });
+                    }
+                }
+                this.saveStateToFirestore();
+            }
+
+            this.updateScore = function(index) {
+                const score1Input = document.getElementById(`score1-${index}`);
+                const score2Input = document.getElementById(`score2-${index}`);
+                const bestPlayerInput = document.getElementById(`best-player-${index}`);
+
+                const score1 = parseInt(score1Input.value);
+                const score2 = parseInt(score2Input.value);
+                const bestPlayer = bestPlayerInput.value.trim();
+
+                if (!isNaN(score1) && !isNaN(score2) && score1 >= 0 && score2 >= 0) {
+                    const match = this.schedule[index];
+                    const oldScorersTeam1 = match.scorers.filter(s => s.team === match.team1);
+                    const oldScorersTeam2 = match.scorers.filter(s => s.team === match.team2);
+                    
+                    match.score1 = score1;
+                    match.score2 = score2;
+                    match.played = true;
+                    match.bestPlayer = bestPlayer;
+                    match.scorersConfirmed = false;
+
+                    const newScorers = [];
+                    for (let i = 0; i < score1; i++) {
+                        newScorers.push({ player: oldScorersTeam1[i]?.player || '', team: match.team1 });
+                    }
+                    for (let i = 0; i < score2; i++) {
+                        newScorers.push({ player: oldScorersTeam2[i]?.player || '', team: match.team2 });
+                    }
+                    match.scorers = newScorers;
+                    
+                    this.saveStateToFirestore();
+                } else {
+                    this.showAlert("Por favor, introduce un marcador válido (números no negativos).");
+                }
+            }
+
+            this.requestEditMatch = function(index, isFinal = false) {
+                this.showConfirm("¿Deseas editar este marcador?", () => {
+                    const idPrefix = isFinal ? 'final' : index;
+                    document.getElementById(`score1-${idPrefix}`).readOnly = false;
+                    document.getElementById(`score2-${idPrefix}`).readOnly = false;
+                    document.getElementById(`best-player-${idPrefix}`).readOnly = false;
+
+                    document.getElementById(`score1-${idPrefix}`).classList.remove('bg-gray-100', 'cursor-not-allowed');
+                    document.getElementById(`score2-${idPrefix}`).classList.remove('bg-gray-100', 'cursor-not-allowed');
+                    document.getElementById(`best-player-${idPrefix}`).classList.remove('bg-gray-100', 'cursor-not-allowed');
+
+                    document.getElementById(`edit-btn-${idPrefix}`).classList.add('hidden');
+                    document.getElementById(`save-btn-${idPrefix}`).classList.remove('hidden');
+                });
+            }
+            
+            this.saveScorers = function(matchIndex, isFinal = false) {
+                const match = isFinal ? this.finalMatch : this.schedule[matchIndex];
+                if (!match) return;
+
+                const idPrefix = isFinal ? 'final' : matchIndex;
+                
+                const team1ScorerInputs = Array.from(document.querySelectorAll(`#scorers-inputs-${idPrefix} > div:first-child input`));
+                const team2ScorerInputs = Array.from(document.querySelectorAll(`#scorers-inputs-${idPrefix} > div:last-child input`));
+
+                let team1ScorerIndex = 0;
+                let team2ScorerIndex = 0;
+
+                match.scorers.forEach(scorer => {
+                    if (scorer.team === match.team1) {
+                        scorer.player = team1ScorerInputs[team1ScorerIndex]?.value.trim() || '';
+                        team1ScorerIndex++;
+                    } else {
+                        scorer.player = team2ScorerInputs[team2ScorerIndex]?.value.trim() || '';
+                        team2ScorerIndex++;
+                    }
+                });
+                
+                match.scorersConfirmed = true;
+                this.saveStateToFirestore();
+                this.showAlert('Goleadores guardados con éxito.');
+            }
+            
+             this.requestEditScorers = function(matchIndex, isFinal = false) {
+                this.showConfirm("¿Deseas editar los goleadores de este partido?", () => {
+                    const match = isFinal ? this.finalMatch : this.schedule[matchIndex];
+                    if (match) {
+                        match.scorersConfirmed = false;
+                        this.saveStateToFirestore();
+                    }
+                });
+            }
+
+
+            this.calculateTeamStats = function() {
+                this.teams.forEach(team => { 
+                    team.pj=0; team.g=0; team.e=0; team.p=0; 
+                    team.gf=0; team.gc=0; team.dg=0; team.pts=0; 
+                });
+                
+                this.schedule.forEach(match => {
+                    if (match.played) {
+                        const t1 = this.teams.find(t => t.name === match.team1);
+                        const t2 = this.teams.find(t => t.name === match.team2);
+                        if (!t1 || !t2) return;
+                        t1.pj++; t2.pj++;
+                        t1.gf += match.score1; t1.gc += match.score2;
+                        t2.gf += match.score2; t2.gc += match.score1;
+                        t1.dg = t1.gf - t1.gc; t2.dg = t2.gf - t2.gc;
+                        if (match.score1 > match.score2) { t1.g++; t2.p++; t1.pts += 3; }
+                        else if (match.score2 > match.score1) { t2.g++; t1.p++; t2.pts += 3; }
+                        else { t1.e++; t2.e++; t1.pts += 1; t2.pts += 1; }
+                    }
+                });
+                this.teams.sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf || a.name.localeCompare(b.name));
+            }
+            
+            this.checkIfTournamentFinished = function() {
+                const allPlayed = this.schedule.length > 0 && this.schedule.every(m => m.played);
+                if(allPlayed && !this.finalMatch && this.teams.length >= 2) {
+                   this.finalMatch = { 
+                       team1: this.teams[0].name, 
+                       team2: this.teams[1].name, 
+                       score1: null, 
+                       score2: null, 
+                       played: false, 
+                       winner: null, 
+                       bestPlayer: '', 
+                       scorers: [],
+                       scorersConfirmed: false
+                    };
+                   this.saveStateToFirestore();
+                }
+            }
+            
+            this.updateFinalScore = function() {
+                 const score1 = parseInt(document.getElementById('final-score1').value);
+                 const score2 = parseInt(document.getElementById('final-score2').value);
+                 const bestPlayer = document.getElementById('final-best-player').value.trim();
+
+                 if (!isNaN(score1) && !isNaN(score2) && score1 >= 0 && score2 >= 0) {
+                    this.finalMatch.score1 = score1; this.finalMatch.score2 = score2; this.finalMatch.played = true; this.finalMatch.bestPlayer = bestPlayer;
+                    this.finalMatch.scorersConfirmed = false;
+
+                    if (score1 > score2) { this.finalMatch.winner = this.finalMatch.team1; }
+                    else if (score2 > score1) { this.finalMatch.winner = this.finalMatch.team2; }
+                    else { 
+                        this.finalMatch.played = false; 
+                        this.showAlert("El partido finalizó en empate. Definan por penales e introduzcan el marcador final."); 
+                    }
+
+                    if (this.finalMatch.played) {
+                        const oldScorersTeam1 = this.finalMatch.scorers.filter(s => s.team === this.finalMatch.team1);
+                        const oldScorersTeam2 = this.finalMatch.scorers.filter(s => s.team === this.finalMatch.team2);
+
+                        const newScorers = [];
+                        for (let i = 0; i < score1; i++) {
+                           newScorers.push({ player: oldScorersTeam1[i]?.player || '', team: this.finalMatch.team1 });
+                        }
+                        for (let i = 0; i < score2; i++) {
+                           newScorers.push({ player: oldScorersTeam2[i]?.player || '', team: this.finalMatch.team2 });
+                        }
+                         this.finalMatch.scorers = newScorers;
+                    }
+                    this.saveStateToFirestore();
+                 } else { this.showAlert("Por favor, introduce un marcador válido."); }
+            }
+            
+            this.resetTournament = function() {
+                this.showConfirm("¿Estás seguro? Se borrarán todos los datos del torneo actual. Esta acción es irreversible.", async () => {
+                    if (!this.userId) return;
+                    try {
+                        const mainStateRef = doc(this.db, "tournaments", this.appId, "data", "mainState");
+                        await deleteDoc(mainStateRef);
+                    } catch (error) {
+                         console.error("Error al reiniciar el torneo:", error);
+                        this.showAlert("No se pudo reiniciar el torneo.");
+                    }
+                });
+            }
+
+            this.renderPlayerDatalist = function() {
+                const playerNames = new Set();
+                const allMatches = [...this.schedule];
+                if(this.finalMatch) allMatches.push(this.finalMatch);
+
+                allMatches.forEach(match => {
+                    if (match.bestPlayer) playerNames.add(match.bestPlayer);
+                    if (match.scorers) match.scorers.forEach(s => {
+                        if(s.player) playerNames.add(s.player)
+                    });
+                });
+
+                const datalist = document.getElementById('player-names');
+                datalist.innerHTML = Array.from(playerNames).filter(Boolean).map(name => `<option value="${name}"></option>`).join('');
+            }
+            
+            this.calculateAndRenderTopScorers = function() {
+                const section = document.getElementById('top-scorers-section');
+                if (this.schedule.length === 0 && !this.finalMatch) {
+                    section.classList.add('hidden');
+                    return;
+                }
+                section.classList.remove('hidden');
+
+                const scorerMap = new Map();
+                const allMatches = [...this.schedule];
+                if (this.finalMatch && this.finalMatch.played) allMatches.push(this.finalMatch);
+
+                allMatches.forEach(match => {
+                    if(match.scorers) {
+                        match.scorers.forEach(scorer => {
+                            if (!scorer.player) return;
+                            const key = `${scorer.player}-${scorer.team}`;
+                            if (!scorerMap.has(key)) {
+                                scorerMap.set(key, { player: scorer.player, team: scorer.team, goals: 0 });
+                            }
+                            scorerMap.get(key).goals++;
+                        });
+                    }
+                });
+                
+                const sortedScorers = Array.from(scorerMap.values()).sort((a, b) => b.goals - a.goals || a.player.localeCompare(b.player));
+                
+                const body = document.getElementById('top-scorers-body');
+                body.innerHTML = sortedScorers.map((scorer, index) => `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-2 font-bold">${index + 1}</td>
+                        <td class="p-2">${scorer.player}</td>
+                        <td class="p-2 text-gray-600">${scorer.team}</td>
+                        <td class="p-2 text-center font-bold">${scorer.goals}</td>
+                    </tr>
+                `).join('');
+            }
+
+            this.renderAll = function() {
+                if (!this.isAuthenticated) return;
+                
+                this.calculateTeamStats();
+                
+                const scheduleGenerated = this.schedule.length > 0;
+                document.getElementById('team-name').disabled = scheduleGenerated;
+                document.getElementById('add-team-btn').disabled = scheduleGenerated;
+                document.getElementById('add-team-wrapper').classList.toggle('opacity-50', scheduleGenerated);
+
+                this.renderPlayerDatalist();
+                this.renderTeams();
+                this.renderSchedule();
+                this.renderStandings();
+                this.calculateAndRenderTopScorers();
+                
+                this.checkIfTournamentFinished();
+                
+                if (this.finalMatch) {
+                    if (this.finalMatch.winner) {
+                        document.getElementById('winner-section').classList.remove('hidden');
+                        document.getElementById('winner-name').textContent = `🎉 ${this.finalMatch.winner} 🎉`;
+                        document.getElementById('main-content').classList.add('hidden');
+                    } else {
+                        document.getElementById('winner-section').classList.add('hidden');
+                        document.getElementById('main-content').classList.remove('hidden');
+                        this.renderFinalMatch();
+                    }
+                } else {
+                     document.getElementById('main-content').classList.remove('hidden');
+                     document.getElementById('winner-section').classList.add('hidden');
+                     document.getElementById('final-match-section').classList.add('hidden');
+                }
+            }
+            
+            this.renderTeams = function() {
+                const list = document.getElementById('teams-list');
+                list.innerHTML = this.teams.map((team, index) => `
+                    <div class="flex justify-between items-center bg-gray-100 p-2 rounded">
+                        <span class="font-semibold">${team.name}</span>
+                        <button onclick="app.removeTeam(${index})" class="text-red-500 hover:text-red-700 text-sm font-bold">X</button>
+                    </div>`).join('');
+                document.getElementById('clear-teams-btn').classList.toggle('hidden', this.teams.length === 0);
+                const hasData = this.teams.length > 0 || this.schedule.length > 0;
+                document.getElementById('reset-tournament-btn').classList.toggle('hidden', !hasData);
+                document.getElementById('generate-schedule-btn').disabled = this.teams.length < 2 || this.schedule.length > 0;
+            }
+            
+            this.renderSchedule = function() {
+                const section = document.getElementById('schedule-section');
+                section.classList.toggle('hidden', this.schedule.length === 0 && document.getElementById('no-data-notification').classList.contains('hidden'));
+                
+                const list = document.getElementById('schedule-list');
+                list.innerHTML = this.schedule.map((match, index) => {
+                    const isPlayed = match.played;
+                    const readonlyAttr = isPlayed ? 'readonly' : '';
+                    const readonlyClass = isPlayed ? 'bg-gray-100 cursor-not-allowed' : '';
+                    
+                    const team1Scorers = match.scorers.filter(s => s.team === match.team1);
+                    const team2Scorers = match.scorers.filter(s => s.team === match.team2);
+                    
+                    const scorersReadonlyAttr = match.scorersConfirmed ? 'readonly' : '';
+                    const scorersReadonlyClass = match.scorersConfirmed ? 'bg-gray-100 cursor-not-allowed' : '';
+
+
+                    return `
+                    <div class="border p-4 rounded-lg ${isPlayed ? 'bg-gray-50' : ''}">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div class="sm:w-1/3 text-center sm:text-right font-semibold text-lg">${match.team1}</div>
+                            <div class="flex items-center justify-center gap-2">
+                                <input type="number" min="0" id="score1-${index}" class="input-field text-center w-16 text-xl font-bold ${readonlyClass}" value="${match.score1 ?? ''}" ${readonlyAttr}>
+                                <span class="font-bold text-gray-400">vs</span>
+                                <input type="number" min="0" id="score2-${index}" class="input-field text-center w-16 text-xl font-bold ${readonlyClass}" value="${match.score2 ?? ''}" ${readonlyAttr}>
+                            </div>
+                            <div class="sm:w-1/3 text-center sm:text-left font-semibold text-lg">${match.team2}</div>
+                        </div>
+
+                        <div class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-2">
+                            <label for="best-player-${index}" class="text-sm font-semibold whitespace-nowrap">🏅 Jugador del Partido:</label>
+                            <input type="text" id="best-player-${index}" class="input-field ${readonlyClass}" placeholder="Nombre" value="${match.bestPlayer || ''}" list="player-names" ${readonlyAttr}>
+                            
+                            <button id="save-btn-${index}" onclick="app.updateScore(${index})" class="btn btn-primary p-2 ${isPlayed ? 'hidden' : ''}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                <span>Guardar</span>
+                            </button>
+                             <button id="edit-btn-${index}" onclick="app.requestEditMatch(${index})" class="btn btn-secondary p-2 ${!isPlayed ? 'hidden' : ''}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" /></svg>
+                                <span>Editar</span>
+                            </button>
+                        </div>
+                        
+                        ${isPlayed ? `
+                        <hr class="my-4">
+                        <div class="text-sm">
+                            <h4 class="font-semibold mb-2 text-center">Registrar Goleadores</h4>
+                            <div class="grid grid-cols-2 gap-4" id="scorers-inputs-${index}">
+                                <div>
+                                    <p class="font-medium text-center mb-2">${match.team1}</p>
+                                    <div class="space-y-2">
+                                        ${team1Scorers.length === 0 
+                                            ? `<p class="text-xs text-gray-500 text-center italic">Sin goles</p>` 
+                                            : team1Scorers.map((scorer, i) => `
+                                                <input type="text"
+                                                    class="input-field ${scorersReadonlyClass}"
+                                                    placeholder="Gol ${i + 1}"
+                                                    value="${scorer.player || ''}"
+                                                    list="player-names"
+                                                    ${scorersReadonlyAttr}>
+                                            `).join('')}
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-center mb-2">${match.team2}</p>
+                                    <div class="space-y-2">
+                                        ${team2Scorers.length === 0 
+                                            ? `<p class="text-xs text-gray-500 text-center italic">Sin goles</p>` 
+                                            : team2Scorers.map((scorer, i) => `
+                                                <input type="text"
+                                                    class="input-field ${scorersReadonlyClass}"
+                                                    placeholder="Gol ${i + 1}"
+                                                    value="${scorer.player || ''}"
+                                                    list="player-names"
+                                                    ${scorersReadonlyAttr}>
+                                            `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex justify-center">
+                                ${!match.scorersConfirmed ? `
+                                    <button onclick="app.saveScorers(${index})" class="btn btn-primary btn-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                        <span>Confirmar Goleadores</span>
+                                    </button>
+                                ` : `
+                                    <button onclick="app.requestEditScorers(${index})" class="btn btn-secondary btn-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" /></svg>
+                                        <span>Editar Goleadores</span>
+                                    </button>
+                                `}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;}).join('');
+            }
+            
+            this.renderStandings = function() {
+                const section = document.getElementById('standings-section');
+                section.classList.toggle('hidden', this.schedule.length === 0 && document.getElementById('no-data-notification').classList.contains('hidden'));
+                const body = document.getElementById('standings-body');
+                body.innerHTML = this.teams.map((team, index) => `
+                    <tr class="${index < 2 ? 'bg-green-100' : ''} hover:bg-gray-50">
+                        <td class="p-2 font-bold">${index + 1}</td><td class="p-2">${team.name}</td><td class="p-2 text-center">${team.pj}</td><td class="p-2 text-center">${team.g}</td><td class="p-2 text-center">${team.e}</td><td class="p-2 text-center">${team.p}</td><td class="p-2 text-center">${team.gf}</td><td class="p-2 text-center">${team.gc}</td><td class="p-2 text-center">${team.dg}</td><td class="p-2 text-center font-bold">${team.pts}</td>
+                    </tr>`).join('');
+            }
+            
+            this.renderFinalMatch = function() {
+                document.getElementById('final-match-section').classList.remove('hidden');
+                const isPlayed = this.finalMatch.played;
+                const readonlyAttr = isPlayed ? 'readonly' : '';
+                const readonlyClass = isPlayed ? 'bg-gray-100 cursor-not-allowed' : '';
+                
+                const team1Scorers = this.finalMatch.scorers.filter(s => s.team === this.finalMatch.team1);
+                const team2Scorers = this.finalMatch.scorers.filter(s => s.team === this.finalMatch.team2);
+
+                const scorersReadonlyAttr = this.finalMatch.scorersConfirmed ? 'readonly' : '';
+                const scorersReadonlyClass = this.finalMatch.scorersConfirmed ? 'bg-gray-100 cursor-not-allowed' : '';
+
+                document.getElementById('final-match-container').innerHTML = `
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full max-w-lg">
+                            <div class="sm:w-1/3 text-center sm:text-right font-bold text-2xl">${this.finalMatch.team1}</div>
+                            <div class="flex items-center justify-center gap-2">
+                                <input type="number" min="0" id="final-score1" class="input-field text-center w-20 text-2xl font-bold ${readonlyClass}" value="${this.finalMatch.score1 ?? ''}" ${readonlyAttr}>
+                                <span class="font-bold text-gray-400 text-2xl">-</span>
+                                <input type="number" min="0" id="final-score2" class="input-field text-center w-20 text-2xl font-bold ${readonlyClass}" value="${this.finalMatch.score2 ?? ''}" ${readonlyAttr}>
+                            </div>
+                            <div class="sm:w-1/3 text-center sm:text-left font-bold text-2xl">${this.finalMatch.team2}</div>
+                        </div>
+                        <div class="mt-2 flex flex-col sm:flex-row items-center justify-center gap-2 w-full max-w-lg">
+                            <label for="final-best-player" class="text-sm font-semibold whitespace-nowrap">🏅 Jugador del Partido:</label>
+                            <input type="text" id="final-best-player" class="input-field ${readonlyClass}" placeholder="Nombre" value="${this.finalMatch.bestPlayer || ''}" list="player-names" ${readonlyAttr}>
+                        </div>
+                        <div id="final-buttons-container" class="mt-2">
+                            <button id="save-btn-final" onclick="app.updateFinalScore()" class="btn btn-primary ${isPlayed ? 'hidden' : ''}">Registrar Marcador Final</button>
+                            <button id="edit-btn-final" onclick="app.requestEditMatch(null, true)" class="btn btn-secondary ${!isPlayed ? 'hidden' : ''}">Editar Marcador Final</button>
+                        </div>
+
+                        ${isPlayed ? `
+                        <hr class="my-4 w-full">
+                        <div class="text-sm w-full max-w-md">
+                            <h4 class="font-semibold mb-2 text-center">Goleadores de la Final</h4>
+                            <div class="grid grid-cols-2 gap-4" id="scorers-inputs-final">
+                                <div>
+                                    <p class="font-medium text-center mb-2">${this.finalMatch.team1}</p>
+                                    <div class="space-y-2">
+                                        ${team1Scorers.length === 0 
+                                            ? `<p class="text-xs text-gray-500 text-center italic">Sin goles</p>` 
+                                            : team1Scorers.map((scorer, i) => `
+                                                <input type="text"
+                                                    class="input-field ${scorersReadonlyClass}"
+                                                    placeholder="Gol ${i + 1}"
+                                                    value="${scorer.player || ''}"
+                                                    list="player-names"
+                                                    ${scorersReadonlyAttr}>
+                                            `).join('')}
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-center mb-2">${this.finalMatch.team2}</p>
+                                    <div class="space-y-2">
+                                        ${team2Scorers.length === 0 
+                                            ? `<p class="text-xs text-gray-500 text-center italic">Sin goles</p>` 
+                                            : team2Scorers.map((scorer, i) => `
+                                                <input type="text"
+                                                    class="input-field ${scorersReadonlyClass}"
+                                                    placeholder="Gol ${i + 1}"
+                                                    value="${scorer.player || ''}"
+                                                    list="player-names"
+                                                    ${scorersReadonlyAttr}>
+                                            `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                             <div class="mt-4 flex justify-center">
+                                ${!this.finalMatch.scorersConfirmed ? `
+                                    <button onclick="app.saveScorers(null, true)" class="btn btn-primary btn-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                        <span>Confirmar Goleadores</span>
+                                    </button>
+                                ` : `
+                                    <button onclick="app.requestEditScorers(null, true)" class="btn btn-secondary btn-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536L16.732 3.732z" /></svg>
+                                        <span>Editar Goleadores</span>
+                                    </button>
+                                `}
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+        }
+        
+        const app = new App();
+        document.addEventListener('DOMContentLoaded', () => app.init());
+        window.app = app; 
+
+    </script>
+</body>
+</html>
+
