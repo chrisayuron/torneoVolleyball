@@ -424,24 +424,100 @@
                  });
             }
             
+            // --- NUEVO ALGORITMO ROUND-ROBIN ---
             this.generateSchedule = function() {
-                if (this.teams.length < 2) return;
-                this.schedule = [];
-                for (let i = 0; i < this.teams.length; i++) {
-                    for (let j = i + 1; j < this.teams.length; j++) {
-                        this.schedule.push({ 
-                            team1: this.teams[i].name, 
-                            team2: this.teams[j].name, 
-                            sets: [ { s1: null, s2: null }, { s1: null, s2: null }, { s1: null, s2: null } ],
-                            setsWon1: 0,
-                            setsWon2: 0,
-                            played: false, 
-                            mvp: ''
-                        });
-                    }
+                if (this.teams.length < 2) {
+                    this.showAlert("Necesitas al menos 2 equipos para generar un calendario.");
+                    return;
                 }
+                
+                let teams = this.teams.map(t => t.name);
+                
+                if (teams.length % 2 !== 0) {
+                    teams.push("Descanso");
+                }
+                
+                const numTeams = teams.length;
+                const numRounds = numTeams - 1;
+                const half = numTeams / 2;
+                
+                const teamIndexes = teams.map((_, i) => i);
+                const rounds = [];
+
+                for (let round = 0; round < numRounds; round++) {
+                    const roundMatches = [];
+                    for (let i = 0; i < half; i++) {
+                        const team1 = teams[teamIndexes[i]];
+                        const team2 = teams[teamIndexes[numTeams - 1 - i]];
+                        
+                        if (team1 !== "Descanso" && team2 !== "Descanso") {
+                            if (round % 2 === 0) {
+                                roundMatches.push({ team1, team2 });
+                            } else {
+                                roundMatches.push({ team1: team2, team2: team1 });
+                            }
+                        }
+                    }
+                    rounds.push(roundMatches);
+                    
+                    const last = teamIndexes.pop();
+                    teamIndexes.splice(1, 0, last);
+                }
+                
+                this.schedule = rounds.flatMap((roundMatches, roundIndex) => {
+                    return roundMatches.map(match => ({
+                        round: roundIndex + 1,
+                        team1: match.team1,
+                        team2: match.team2,
+                        sets: [{ s1: null, s2: null }, { s1: null, s2: null }, { s1: null, s2: null }],
+                        setsWon1: 0,
+                        setsWon2: 0,
+                        played: false,
+                        mvp: ''
+                    }));
+                });
+
                 this.saveStateToFirestore();
             }
+
+            
+            this.isSetWinner = function(score1, score2) {
+                if (score1 >= 10 && score1 >= score2 + 2) return true;
+                if (score2 >= 10 && score2 >= score1 + 2) return true;
+                return false;
+            }
+
+            this.updateLiveScoreDisplay = function(index, isFinal = false) {
+                const idPrefix = isFinal ? 'final' : index;
+                const mainScoreDisplay = document.getElementById(`main-score-${idPrefix}`);
+                const set3Wrapper = document.getElementById(`set3-wrapper-${idPrefix}`);
+
+                let setsWon1 = 0;
+                let setsWon2 = 0;
+
+                for (let i = 0; i < 2; i++) { // Only check first two sets for showing/hiding set 3
+                    const s1Input = document.getElementById(`set${i+1}-s1-${idPrefix}`);
+                    const s2Input = document.getElementById(`set${i+1}-s2-${idPrefix}`);
+                    if (s1Input && s2Input) {
+                        const s1 = parseInt(s1Input.value) || 0;
+                        const s2 = parseInt(s2Input.value) || 0;
+                        if (this.isSetWinner(s1, s2)) {
+                            if (s1 > s2) setsWon1++;
+                            else setsWon2++;
+                        }
+                    }
+                }
+
+                if (mainScoreDisplay) mainScoreDisplay.textContent = `${setsWon1} - ${setsWon2}`;
+                if (set3Wrapper) {
+                    if (setsWon1 === 1 && setsWon2 === 1) {
+                        set3Wrapper.classList.remove('hidden');
+                    } else {
+                        set3Wrapper.classList.add('hidden');
+                    }
+                }
+            }
+
 
             this.updateMatchScores = function(index, isFinal = false) {
                 const match = isFinal ? this.finalMatch : this.schedule[index];
@@ -459,6 +535,11 @@
                             return;
                         }
 
+                        if(s1 !== null && s1 === s2 && s1 >= 9){
+                            this.showAlert(`El Set ${i+1} está empatado. Un equipo debe ganar por una diferencia de 2 puntos.`);
+                            return;
+                        }
+
                         match.sets[i] = { s1, s2 };
                     }
                 }
@@ -467,8 +548,10 @@
                 let setsWon2 = 0;
                 for (const set of match.sets) {
                     if (set.s1 !== null && set.s2 !== null) {
-                        if (set.s1 > set.s2) setsWon1++;
-                        else if (set.s2 > set.s1) setsWon2++;
+                        if(this.isSetWinner(set.s1, set.s2)){
+                           if (set.s1 > set.s2) setsWon1++;
+                           else if (set.s2 > set.s1) setsWon2++;
+                        }
                     }
                 }
                 match.setsWon1 = setsWon1;
@@ -490,6 +573,8 @@
             }
             
             this.calculateTeamStats = function() {
+                if (!Array.isArray(this.teams) || !Array.isArray(this.schedule)) return;
+                
                 this.teams.forEach(team => {
                     team.pj = 0; team.g = 0; team.p = 0;
                     team.sf = 0; team.sc = 0;
@@ -498,28 +583,32 @@
                 });
 
                 this.schedule.forEach(match => {
-                    if (match.played) {
+                    if (match && match.played) {
                         const t1 = this.teams.find(t => t.name === match.team1);
                         const t2 = this.teams.find(t => t.name === match.team2);
                         if (!t1 || !t2) return;
 
                         t1.pj++; t2.pj++;
-                        t1.sf += match.setsWon1; t1.sc += match.setsWon2;
-                        t2.sf += match.setsWon2; t2.sc += match.setsWon1;
+                        t1.sf += match.setsWon1 || 0;
+                        t1.sc += match.setsWon2 || 0;
+                        t2.sf += match.setsWon2 || 0;
+                        t2.sc += match.setsWon1 || 0;
 
-                        match.sets.forEach(set => {
-                            if (set.s1 !== null && set.s2 !== null) {
-                                t1.pf += set.s1; t1.pc += set.s2;
-                                t2.pf += set.s2; t2.pc += set.s1;
-                            }
-                        });
+                        if (Array.isArray(match.sets)) {
+                            match.sets.forEach(set => {
+                                if (set && set.s1 !== null && set.s2 !== null) {
+                                    t1.pf += set.s1; t1.pc += set.s2;
+                                    t2.pf += set.s2; t2.pc += set.s1;
+                                }
+                            });
+                        }
 
                         if (match.winner === t1.name) {
                             t1.g++; t2.p++;
                             if (match.setsWon1 === 2 && match.setsWon2 === 0) t1.pts += 3;
                             else t1.pts += 2;
                             t2.pts += (match.setsWon2 === 1) ? 1 : 0;
-                        } else {
+                        } else if (match.winner === t2.name) {
                             t2.g++; t1.p++;
                             if (match.setsWon2 === 2 && match.setsWon1 === 0) t2.pts += 3;
                             else t2.pts += 2;
@@ -604,16 +693,17 @@
             }
             
             this.renderMatchCard = function(match, index, isFinal = false) {
-                 const idPrefix = isFinal ? 'final' : index;
+                 const idPrefix = isFinal ? 'final' : (index ?? 'final');
                  const readonlyAttr = match.played ? 'readonly' : '';
+                 const onInputChange = `oninput="app.updateLiveScoreDisplay(${isFinal ? 'null' : index}, ${isFinal})"`;
                  
-                 const showSet3 = (match.setsWon1 === 1 && match.setsWon2 === 1) || (match.sets[2].s1 !== null || match.sets[2].s2 !== null);
+                 const showSet3 = (match.setsWon1 === 1 && match.setsWon2 === 1) || (match.sets[2] && (match.sets[2].s1 !== null || match.sets[2].s2 !== null));
 
                  return `
                     <div class="border p-4 rounded-lg ${match.played ? 'bg-slate-50' : ''}">
                         <div class="flex items-center justify-around gap-4 mb-4">
                             <div class="w-2/5 text-center font-bold text-lg">${match.team1}</div>
-                            <div class="text-3xl font-bold text-blue-700">${match.setsWon1} - ${match.setsWon2}</div>
+                            <div id="main-score-${idPrefix}" class="text-3xl font-bold text-blue-700">${match.setsWon1} - ${match.setsWon2}</div>
                             <div class="w-2/5 text-center font-bold text-lg">${match.team2}</div>
                         </div>
 
@@ -622,30 +712,29 @@
                             <div class="grid grid-cols-3 gap-x-4 items-center text-center">
                                 <div class="font-semibold text-slate-500">Set 1</div>
                                 <div class="flex items-center gap-2">
-                                    <input type="number" min="0" id="set1-s1-${idPrefix}" class="input-field text-center" value="${match.sets[0].s1 ?? ''}" ${readonlyAttr}>
+                                    <input type="number" min="0" id="set1-s1-${idPrefix}" class="input-field text-center" value="${match.sets[0].s1 ?? ''}" ${readonlyAttr} ${onInputChange}>
                                     <span>-</span>
-                                    <input type="number" min="0" id="set1-s2-${idPrefix}" class="input-field text-center" value="${match.sets[0].s2 ?? ''}" ${readonlyAttr}>
+                                    <input type="number" min="0" id="set1-s2-${idPrefix}" class="input-field text-center" value="${match.sets[0].s2 ?? ''}" ${readonlyAttr} ${onInputChange}>
                                 </div>
                             </div>
                             <!-- Set 2 -->
                             <div class="grid grid-cols-3 gap-x-4 items-center text-center">
                                 <div class="font-semibold text-slate-500">Set 2</div>
                                 <div class="flex items-center gap-2">
-                                    <input type="number" min="0" id="set2-s1-${idPrefix}" class="input-field text-center" value="${match.sets[1].s1 ?? ''}" ${readonlyAttr}>
+                                    <input type="number" min="0" id="set2-s1-${idPrefix}" class="input-field text-center" value="${match.sets[1].s1 ?? ''}" ${readonlyAttr} ${onInputChange}>
                                     <span>-</span>
-                                    <input type="number" min="0" id="set2-s2-${idPrefix}" class="input-field text-center" value="${match.sets[1].s2 ?? ''}" ${readonlyAttr}>
+                                    <input type="number" min="0" id="set2-s2-${idPrefix}" class="input-field text-center" value="${match.sets[1].s2 ?? ''}" ${readonlyAttr} ${onInputChange}>
                                 </div>
                             </div>
                             <!-- Set 3 -->
-                            ${showSet3 ? `
-                            <div class="grid grid-cols-3 gap-x-4 items-center text-center">
+                            <div id="set3-wrapper-${idPrefix}" class="grid grid-cols-3 gap-x-4 items-center text-center ${showSet3 ? '' : 'hidden'}">
                                 <div class="font-semibold text-slate-500">Set 3</div>
                                 <div class="flex items-center gap-2">
-                                    <input type="number" min="0" id="set3-s1-${idPrefix}" class="input-field text-center" value="${match.sets[2].s1 ?? ''}" ${readonlyAttr}>
+                                    <input type="number" min="0" id="set3-s1-${idPrefix}" class="input-field text-center" value="${match.sets[2].s1 ?? ''}" ${readonlyAttr} ${onInputChange}>
                                     <span>-</span>
-                                    <input type="number" min="0" id="set3-s2-${idPrefix}" class="input-field text-center" value="${match.sets[2].s2 ?? ''}" ${readonlyAttr}>
+                                    <input type="number" min="0" id="set3-s2-${idPrefix}" class="input-field text-center" value="${match.sets[2].s2 ?? ''}" ${readonlyAttr} ${onInputChange}>
                                 </div>
-                            </div>` : ''}
+                            </div>
                         </div>
                         
                         <div class="mt-4 flex flex-col sm:flex-row items-center justify-center gap-2">
@@ -664,8 +753,37 @@
                 const section = document.getElementById('schedule-section');
                 section.classList.toggle('hidden', this.schedule.length === 0);
                 const list = document.getElementById('schedule-list');
-                list.innerHTML = this.schedule.map((match, index) => this.renderMatchCard(match, index, false)).join('');
+
+                if (this.schedule.length === 0) {
+                    list.innerHTML = '';
+                    return;
+                }
+
+                const rounds = {};
+                this.schedule.forEach((match, index) => {
+                    const roundNum = match.round;
+                    if (!rounds[roundNum]) {
+                        rounds[roundNum] = [];
+                    }
+                    rounds[roundNum].push({ ...match, originalIndex: index });
+                });
+
+                let html = '';
+                for (const roundNum in rounds) {
+                    html += `<div class="mb-8">
+                                <h3 class="text-xl font-semibold mb-4 text-center text-slate-700 border-b pb-2">Jornada ${roundNum}</h3>
+                                <div class="space-y-6 mt-4">`;
+                    
+                    rounds[roundNum].forEach(matchWithIndex => {
+                        html += this.renderMatchCard(matchWithIndex, matchWithIndex.originalIndex, false);
+                    });
+
+                    html += `</div></div>`;
+                }
+                
+                list.innerHTML = html;
             }
+
             
             this.renderFinalMatch = function() {
                 document.getElementById('final-match-section').classList.remove('hidden');
