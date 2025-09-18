@@ -114,7 +114,19 @@
             <div class="card text-center">
                 <h2 id="login-title" class="text-2xl font-bold mb-4">Acceso Protegido</h2>
                 <p id="login-subtitle" class="text-slate-600 mb-6">Por favor, introduce la clave maestra para continuar.</p>
-                <input type="password" id="password-input" class="input-field mb-4" placeholder="••••••••">
+                <div class="relative mb-4">
+                    <input type="password" id="password-input" class="input-field pr-10" placeholder="••••••••">
+                    <button id="toggle-password-btn" onclick="app.togglePasswordVisibility()" class="absolute inset-y-0 right-0 px-3 flex items-center text-slate-500 hover:text-slate-700 focus:outline-none">
+                        <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <svg id="eye-slash-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064 7-9.542 7 .847 0 1.67 .111 2.457 .311M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2 2l20 20" />
+                        </svg>
+                    </button>
+                </div>
                 <p id="login-error" class="text-red-500 text-sm mb-4 h-5"></p>
                 <button id="login-btn" class="btn btn-primary w-full">Continuar</button>
             </div>
@@ -131,7 +143,6 @@
             <p class="text-lg text-slate-600 mt-2">Gestiona los equipos, partidos y clasificaciones de tu torneo interclases.</p>
         </header>
 
-        <!-- Banner del Ganador -->
         <div id="winner-section" class="hidden card winner-banner">
             <h2 class="text-3xl font-bold mb-2">¡TENEMOS UN CAMPEÓN!</h2>
             <p id="winner-name" class="text-5xl font-extrabold"></p>
@@ -140,10 +151,8 @@
 
         <div id="main-content">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Columna de Configuración -->
-                <div class="lg:col-span-1">
+                <div class="lg-col-span-1">
                     <div id="config-panel">
-                         <!-- Sección de Equipos -->
                         <div class="card">
                             <h2 class="text-2xl font-bold mb-4 flex items-center text-blue-800">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.653-.124-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.653.124-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
@@ -162,7 +171,6 @@
                             </button>
                         </div>
 
-                        <!-- Sección de Generación de Partidos -->
                         <div class="card">
                              <h2 class="text-2xl font-bold mb-4 flex items-center text-blue-800">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -177,14 +185,12 @@
                     </div>
                 </div>
 
-                <!-- Columna de Partidos y Clasificación -->
                 <div class="lg:col-span-2">
                     <div id="no-data-notification" class="card text-center bg-blue-50 border-blue-200 hidden">
                         <h3 class="text-xl font-semibold text-blue-800">¡Bienvenido!</h3>
                         <p class="text-blue-600 mt-2">Parece que no hay un torneo en curso. Para empezar, añade tu primer equipo en el panel de la izquierda.</p>
                     </div>
 
-                    <!-- Sección de Partidos -->
                     <div id="schedule-section" class="card hidden">
                         <h2 class="text-2xl font-bold mb-4 flex items-center text-blue-800">
                              <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
@@ -193,7 +199,6 @@
                         <div id="schedule-list" class="space-y-6"></div>
                     </div>
 
-                    <!-- Sección de Tabla de Posiciones -->
                     <div id="standings-section" class="card hidden">
                         <h2 class="text-2xl font-bold mb-4 flex items-center text-blue-800">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
@@ -223,7 +228,6 @@
                         </div>
                     </div>
                                         
-                    <!-- Sección Final -->
                      <div id="final-match-section" class="card hidden">
                         <h2 class="text-2xl font-bold mb-4 text-center text-yellow-500">🔥 ¡LA GRAN FINAL! 🔥</h2>
                          <div id="final-match-container"></div>
@@ -232,12 +236,10 @@
             </div>
         </div>
 
-        <!-- Modal para Alertas y Confirmaciones -->
         <div id="modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
                 <div id="modal-message"></div>
                 <div id="modal-buttons" class="flex justify-center gap-4 mt-6">
-                    <!-- Botones se inyectan dinámicamente -->
                 </div>
             </div>
         </div>
@@ -249,21 +251,18 @@
         import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const App = function() {
-            // Estado local de la aplicación
             this.teams = [];
             this.schedule = [];
             this.finalMatch = null;
             this.isAuthenticated = false;
             this.initialLoadComplete = false;
             
-            // Firebase
             this.db = null;
             this.auth = null;
             this.userId = null;
             this.appId = 'default-app-id-volleyball';
             this.unsubscribe = null;
 
-            // --- MODAL ---
             this.showAlert = function(message) {
                 const modal = document.getElementById('modal');
                 document.getElementById('modal-message').innerHTML = `<p class="text-lg">${message}</p>`;
@@ -289,7 +288,6 @@
                 document.getElementById('modal').classList.add('hidden');
             }
             
-            // --- INICIALIZACIÓN Y GESTIÓN DE FIREBASE ---
             this.init = async function() {
                 try {
                     const response = await fetch('/api/get-config');
@@ -399,6 +397,22 @@
                     loginBtn.disabled = false;
                 }
             }
+
+            this.togglePasswordVisibility = function() {
+                const passwordInput = document.getElementById('password-input');
+                const eyeIcon = document.getElementById('eye-icon');
+                const eyeSlashIcon = document.getElementById('eye-slash-icon');
+
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    eyeIcon.classList.add('hidden');
+                    eyeSlashIcon.classList.remove('hidden');
+                } else {
+                    passwordInput.type = 'password';
+                    eyeIcon.classList.remove('hidden');
+                    eyeSlashIcon.classList.add('hidden');
+                }
+            }
             
             this.addTeam = function() {
                 if (this.schedule.length > 0) return;
@@ -424,58 +438,76 @@
                  });
             }
             
-            // --- NUEVO ALGORITMO ROUND-ROBIN ---
             this.generateSchedule = function() {
                 if (this.teams.length < 2) {
                     this.showAlert("Necesitas al menos 2 equipos para generar un calendario.");
                     return;
                 }
-                
-                let teams = this.teams.map(t => t.name);
-                
+
+                let teams = [...this.teams.map(t => t.name)];
+                const groupedSchedule = [];
+
                 if (teams.length % 2 !== 0) {
-                    teams.push("Descanso");
+                    teams.push("descanso");
                 }
-                
+
                 const numTeams = teams.length;
                 const numRounds = numTeams - 1;
-                const half = numTeams / 2;
-                
-                const teamIndexes = teams.map((_, i) => i);
-                const rounds = [];
 
                 for (let round = 0; round < numRounds; round++) {
                     const roundMatches = [];
-                    for (let i = 0; i < half; i++) {
-                        const team1 = teams[teamIndexes[i]];
-                        const team2 = teams[teamIndexes[numTeams - 1 - i]];
-                        
-                        if (team1 !== "Descanso" && team2 !== "Descanso") {
-                            if (round % 2 === 0) {
-                                roundMatches.push({ team1, team2 });
-                            } else {
-                                roundMatches.push({ team1: team2, team2: team1 });
-                            }
+                    for (let i = 0; i < numTeams / 2; i++) {
+                        const team1 = teams[i];
+                        const team2 = teams[numTeams - 1 - i];
+
+                        if (team1 !== "descanso" && team2 !== "descanso") {
+                             const matchData = (round % 2 === 1) 
+                                ? { team1: team1, team2: team2 } 
+                                : { team1: team2, team2: team1 };
+                            roundMatches.push({
+                                ...matchData,
+                                sets: [{ s1: null, s2: null }, { s1: null, s2: null }, { s1: null, s2: null }],
+                                setsWon1: 0,
+                                setsWon2: 0,
+                                played: false,
+                                winner: null,
+                                mvp: ''
+                            });
                         }
                     }
-                    rounds.push(roundMatches);
-                    
-                    const last = teamIndexes.pop();
-                    teamIndexes.splice(1, 0, last);
+                    groupedSchedule.push(roundMatches);
+
+                    const lastTeam = teams.pop();
+                    teams.splice(1, 0, lastTeam);
+                }
+
+                const team1Name = this.teams[0].name;
+                const team2Name = this.teams[1].name;
+                let firstMatch = null;
+
+                for (let i = 0; i < groupedSchedule.length; i++) {
+                    const matchIndex = groupedSchedule[i].findIndex(m =>
+                        (m.team1 === team1Name && m.team2 === team2Name) ||
+                        (m.team1 === team2Name && m.team2 === team1Name)
+                    );
+                    if (matchIndex !== -1) {
+                        firstMatch = groupedSchedule[i].splice(matchIndex, 1)[0];
+                        if (groupedSchedule[i].length === 0) {
+                            groupedSchedule.splice(i, 1);
+                        }
+                        break;
+                    }
+                }
+
+                let allMatches = groupedSchedule.flat();
+                if (firstMatch) {
+                    allMatches.unshift(firstMatch);
                 }
                 
-                this.schedule = rounds.flatMap((roundMatches, roundIndex) => {
-                    return roundMatches.map(match => ({
-                        round: roundIndex + 1,
-                        team1: match.team1,
-                        team2: match.team2,
-                        sets: [{ s1: null, s2: null }, { s1: null, s2: null }, { s1: null, s2: null }],
-                        setsWon1: 0,
-                        setsWon2: 0,
-                        played: false,
-                        mvp: ''
-                    }));
-                });
+                this.schedule = allMatches.map((match, index) => ({
+                    ...match,
+                    round: index + 1
+                }));
 
                 this.saveStateToFirestore();
             }
@@ -495,7 +527,7 @@
                 let setsWon1 = 0;
                 let setsWon2 = 0;
 
-                for (let i = 0; i < 2; i++) { // Only check first two sets for showing/hiding set 3
+                for (let i = 0; i < 2; i++) {
                     const s1Input = document.getElementById(`set${i+1}-s1-${idPrefix}`);
                     const s2Input = document.getElementById(`set${i+1}-s2-${idPrefix}`);
                     if (s1Input && s2Input) {
@@ -708,7 +740,6 @@
                         </div>
 
                         <div class="space-y-2">
-                            <!-- Set 1 -->
                             <div class="grid grid-cols-3 gap-x-4 items-center text-center">
                                 <div class="font-semibold text-slate-500">Set 1</div>
                                 <div class="flex items-center gap-2">
@@ -717,7 +748,6 @@
                                     <input type="number" min="0" id="set1-s2-${idPrefix}" class="input-field text-center" value="${match.sets[0].s2 ?? ''}" ${readonlyAttr} ${onInputChange}>
                                 </div>
                             </div>
-                            <!-- Set 2 -->
                             <div class="grid grid-cols-3 gap-x-4 items-center text-center">
                                 <div class="font-semibold text-slate-500">Set 2</div>
                                 <div class="flex items-center gap-2">
@@ -726,7 +756,6 @@
                                     <input type="number" min="0" id="set2-s2-${idPrefix}" class="input-field text-center" value="${match.sets[1].s2 ?? ''}" ${readonlyAttr} ${onInputChange}>
                                 </div>
                             </div>
-                            <!-- Set 3 -->
                             <div id="set3-wrapper-${idPrefix}" class="grid grid-cols-3 gap-x-4 items-center text-center ${showSet3 ? '' : 'hidden'}">
                                 <div class="font-semibold text-slate-500">Set 3</div>
                                 <div class="flex items-center gap-2">
@@ -743,7 +772,7 @@
                         </div>
                         
                         <div class="mt-4 flex justify-center">
-                             <button onclick="app.updateMatchScores(${isFinal ? null : index}, ${isFinal})" class="btn btn-primary btn-sm ${match.played ? 'hidden' : ''}">Guardar Marcador</button>
+                             <button onclick="app.updateMatchScores(${isFinal ? 'null' : index}, ${isFinal})" class="btn btn-primary btn-sm ${match.played ? 'hidden' : ''}">Guardar Marcador</button>
                         </div>
                     </div>
                 `;
