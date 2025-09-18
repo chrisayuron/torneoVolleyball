@@ -122,7 +122,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                         <svg id="eye-slash-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064 7-9.542 7 .847 0 1.67 .111 2.457 .311M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057-5.064 7-9.542 7 .847 0 1.67 .111 2.457 .311M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2 2l20 20" />
                         </svg>
                     </button>
@@ -444,6 +444,7 @@
                     return;
                 }
 
+                // 1. Generate all possible matches using a round-robin algorithm.
                 let teams = [...this.teams.map(t => t.name)];
                 const groupedSchedule = [];
 
@@ -476,42 +477,62 @@
                         }
                     }
                     groupedSchedule.push(roundMatches);
-
+                    
                     const lastTeam = teams.pop();
                     teams.splice(1, 0, lastTeam);
                 }
 
+                let allMatches = groupedSchedule.flat();
+
+                // 2. Extract the match between the first two registered teams.
                 const team1Name = this.teams[0].name;
                 const team2Name = this.teams[1].name;
                 let firstMatch = null;
 
-                for (let i = 0; i < groupedSchedule.length; i++) {
-                    const matchIndex = groupedSchedule[i].findIndex(m =>
-                        (m.team1 === team1Name && m.team2 === team2Name) ||
-                        (m.team1 === team2Name && m.team2 === team1Name)
-                    );
-                    if (matchIndex !== -1) {
-                        firstMatch = groupedSchedule[i].splice(matchIndex, 1)[0];
-                        if (groupedSchedule[i].length === 0) {
-                            groupedSchedule.splice(i, 1);
+                const firstMatchIndex = allMatches.findIndex(m =>
+                    (m.team1 === team1Name && m.team2 === team2Name) ||
+                    (m.team1 === team2Name && m.team2 === team1Name)
+                );
+                if (firstMatchIndex !== -1) {
+                    firstMatch = allMatches.splice(firstMatchIndex, 1)[0];
+                }
+
+                // 3. Create a fair, sequential schedule to avoid back-to-back games.
+                const finalSchedule = [];
+                if (firstMatch) {
+                    finalSchedule.push(firstMatch);
+                }
+
+                let lastTeams = firstMatch ? [firstMatch.team1, firstMatch.team2] : [];
+
+                while (allMatches.length > 0) {
+                    let foundNextMatch = false;
+                    for (let i = 0; i < allMatches.length; i++) {
+                        const potentialMatch = allMatches[i];
+                        if (!lastTeams.includes(potentialMatch.team1) && !lastTeams.includes(potentialMatch.team2)) {
+                            const nextMatch = allMatches.splice(i, 1)[0];
+                            finalSchedule.push(nextMatch);
+                            lastTeams = [nextMatch.team1, nextMatch.team2];
+                            foundNextMatch = true;
+                            break;
                         }
-                        break;
+                    }
+                    
+                    if (!foundNextMatch && allMatches.length > 0) {
+                        const nextMatch = allMatches.shift();
+                        finalSchedule.push(nextMatch);
+                        lastTeams = [nextMatch.team1, nextMatch.team2];
                     }
                 }
 
-                let allMatches = groupedSchedule.flat();
-                if (firstMatch) {
-                    allMatches.unshift(firstMatch);
-                }
-                
-                this.schedule = allMatches.map((match, index) => ({
+                // 4. Assign final jornada numbers and save.
+                this.schedule = finalSchedule.map((match, index) => ({
                     ...match,
                     round: index + 1
                 }));
 
                 this.saveStateToFirestore();
             }
-
             
             this.isSetWinner = function(score1, score2) {
                 if (score1 >= 10 && score1 >= score2 + 2) return true;
@@ -788,27 +809,14 @@
                     return;
                 }
 
-                const rounds = {};
-                this.schedule.forEach((match, index) => {
-                    const roundNum = match.round;
-                    if (!rounds[roundNum]) {
-                        rounds[roundNum] = [];
-                    }
-                    rounds[roundNum].push({ ...match, originalIndex: index });
-                });
-
-                let html = '';
-                for (const roundNum in rounds) {
-                    html += `<div class="mb-8">
-                                <h3 class="text-xl font-semibold mb-4 text-center text-slate-700 border-b pb-2">Jornada ${roundNum}</h3>
-                                <div class="space-y-6 mt-4">`;
-                    
-                    rounds[roundNum].forEach(matchWithIndex => {
-                        html += this.renderMatchCard(matchWithIndex, matchWithIndex.originalIndex, false);
-                    });
-
-                    html += `</div></div>`;
-                }
+                let html = this.schedule.map((match, index) => {
+                    return `<div class="mb-8">
+                                <h3 class="text-xl font-semibold mb-4 text-center text-slate-700 border-b pb-2">Jornada ${match.round}</h3>
+                                <div class="space-y-6 mt-4">
+                                    ${this.renderMatchCard(match, index, false)}
+                                </div>
+                           </div>`;
+                }).join('');
                 
                 list.innerHTML = html;
             }
