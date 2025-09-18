@@ -444,23 +444,19 @@
                     return;
                 }
 
-                // 1. Generate all possible matches using a round-robin algorithm.
+                // 1. Generate all possible matches using a standard round-robin algorithm.
                 let teams = [...this.teams.map(t => t.name)];
                 const groupedSchedule = [];
-
                 if (teams.length % 2 !== 0) {
                     teams.push("descanso");
                 }
-
                 const numTeams = teams.length;
                 const numRounds = numTeams - 1;
-
                 for (let round = 0; round < numRounds; round++) {
                     const roundMatches = [];
                     for (let i = 0; i < numTeams / 2; i++) {
                         const team1 = teams[i];
                         const team2 = teams[numTeams - 1 - i];
-
                         if (team1 !== "descanso" && team2 !== "descanso") {
                              const matchData = (round % 2 === 1) 
                                 ? { team1: team1, team2: team2 } 
@@ -468,64 +464,53 @@
                             roundMatches.push({
                                 ...matchData,
                                 sets: [{ s1: null, s2: null }, { s1: null, s2: null }, { s1: null, s2: null }],
-                                setsWon1: 0,
-                                setsWon2: 0,
-                                played: false,
-                                winner: null,
-                                mvp: ''
+                                setsWon1: 0, setsWon2: 0, played: false, winner: null, mvp: ''
                             });
                         }
                     }
                     groupedSchedule.push(roundMatches);
-                    
                     const lastTeam = teams.pop();
                     teams.splice(1, 0, lastTeam);
                 }
+                let remainingMatches = groupedSchedule.flat();
 
-                let allMatches = groupedSchedule.flat();
-
-                // 2. Extract the match between the first two registered teams.
+                // 2. Extract the match between the first two registered teams to ensure it's played first.
                 const team1Name = this.teams[0].name;
                 const team2Name = this.teams[1].name;
                 let firstMatch = null;
-
-                const firstMatchIndex = allMatches.findIndex(m =>
+                const firstMatchIndex = remainingMatches.findIndex(m =>
                     (m.team1 === team1Name && m.team2 === team2Name) ||
                     (m.team1 === team2Name && m.team2 === team1Name)
                 );
                 if (firstMatchIndex !== -1) {
-                    firstMatch = allMatches.splice(firstMatchIndex, 1)[0];
+                    firstMatch = remainingMatches.splice(firstMatchIndex, 1)[0];
                 }
 
-                // 3. Create a fair, sequential schedule to avoid back-to-back games.
+                // 3. Build the final schedule intelligently, ensuring teams get a break.
                 const finalSchedule = [];
                 if (firstMatch) {
                     finalSchedule.push(firstMatch);
                 }
+                let lastTeamsPlayed = firstMatch ? [firstMatch.team1, firstMatch.team2] : [];
 
-                let lastTeams = firstMatch ? [firstMatch.team1, firstMatch.team2] : [];
+                while (remainingMatches.length > 0) {
+                    // Prioritize finding a match where BOTH teams did not play in the last round.
+                    let nextMatchIndex = remainingMatches.findIndex(match => 
+                        !lastTeamsPlayed.includes(match.team1) && !lastTeamsPlayed.includes(match.team2)
+                    );
 
-                while (allMatches.length > 0) {
-                    let foundNextMatch = false;
-                    for (let i = 0; i < allMatches.length; i++) {
-                        const potentialMatch = allMatches[i];
-                        if (!lastTeams.includes(potentialMatch.team1) && !lastTeams.includes(potentialMatch.team2)) {
-                            const nextMatch = allMatches.splice(i, 1)[0];
-                            finalSchedule.push(nextMatch);
-                            lastTeams = [nextMatch.team1, nextMatch.team2];
-                            foundNextMatch = true;
-                            break;
-                        }
+                    // If no such match is found, it's unavoidable that one team plays again.
+                    // In that case, we just take the first available match.
+                    if (nextMatchIndex === -1) {
+                        nextMatchIndex = 0;
                     }
                     
-                    if (!foundNextMatch && allMatches.length > 0) {
-                        const nextMatch = allMatches.shift();
-                        finalSchedule.push(nextMatch);
-                        lastTeams = [nextMatch.team1, nextMatch.team2];
-                    }
+                    const nextMatch = remainingMatches.splice(nextMatchIndex, 1)[0];
+                    finalSchedule.push(nextMatch);
+                    lastTeamsPlayed = [nextMatch.team1, nextMatch.team2];
                 }
 
-                // 4. Assign final jornada numbers and save.
+                // 4. Assign final round numbers and save the newly ordered schedule.
                 this.schedule = finalSchedule.map((match, index) => ({
                     ...match,
                     round: index + 1
